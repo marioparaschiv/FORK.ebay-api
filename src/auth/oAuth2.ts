@@ -238,7 +238,9 @@ export default class OAuth2 extends Base {
 	 * Authorization code grant flow.
 	 */
 	public async refreshUserAccessToken(): Promise<AuthToken> {
-		if (!this._authToken || !this._authToken.refresh_token) {
+		const oldToken = this._authToken;
+
+		if (!oldToken || !oldToken.refresh_token) {
 			log('Tried to refresh user access token before it was set.');
 			throw new Error('Failed to refresh the user access token. Token or refresh_token is not set.');
 		}
@@ -246,7 +248,7 @@ export default class OAuth2 extends Base {
 		try {
 			const response = await this.req.postForm(this.identityEndpoint, {
 				grant_type: 'refresh_token',
-				refresh_token: this._authToken.refresh_token,
+				refresh_token: oldToken.refresh_token,
 				scope: this.scope.join(' ')
 			}, {
 				auth: {
@@ -258,17 +260,18 @@ export default class OAuth2 extends Base {
 			const token = response.data;
 			log('Successfully refreshed token', token);
 
+
 			const refreshedToken = {
-				...this._authToken,
+				...oldToken,
 				...token
 			};
 
 			this.setCredentials(refreshedToken);
-			this.emitter.emit('refreshAuthToken', refreshedToken);
+			this.emitter.emit('refreshAuthToken', refreshedToken, oldToken);
 
 			return refreshedToken;
 		} catch (error) {
-			this.emitter.emit('failedRefreshAuthToken', this._authToken, error);
+			this.emitter.emit('failedRefreshAuthToken', oldToken, error);
 			log('Failed to refresh the token', error);
 			throw error;
 		}
