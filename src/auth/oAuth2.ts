@@ -268,7 +268,7 @@ export default class OAuth2 extends Base {
 
 			return refreshedToken;
 		} catch (error) {
-			this.emitter.emit('failedRefreshAuthToken', this._authToken);
+			this.emitter.emit('failedRefreshAuthToken', this._authToken, error);
 			log('Failed to refresh the token', error);
 			throw error;
 		}
